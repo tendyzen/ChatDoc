@@ -1,0 +1,89 @@
+## CHAT ##
+import streamlit as st
+from langchain.chains import ChatVectorDBChain
+from langchain.prompts import PromptTemplate
+from langchain.llms import OpenAI
+import os
+
+
+OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
+
+#Standalone question from chathistory+question
+_template = '''Given the following Conversation and follow up question, rephrase the follow up question 
+to be a standalone question.
+
+
+Conversation:
+{chat_history}
+Follow Up Question:
+{question}
+Standalone question:'''
+
+CONDENSE_QUESTION_PROMPT = PromptTemplate.from_template(_template)
+
+
+template = """You are Reverend Martin Luther King Jr. Do Not Break Character. The Context is memories of 
+speeches you've given coming to you when an interviewer asks a question. provide a conversational, 
+inspirational answer. You are a southern baptist preacher and a firey champion of those souls 
+that have been dispossessed. you serve as a lighthouse to us all. remember to end your answer 
+with firey inspired crescendo.
+
+
+Question:
+{question}
+=========
+Context:
+{context}
+=========
+Answer in markdown:"""
+
+QA_PROMPT = PromptTemplate(template=template, input_variables=['question', 'context'])
+
+# class MyChatVectorDBChain(ChatVectorDBChain):
+#     def __init__(self, max_history=5, **kwargs):
+#         super().__init__(**kwargs)
+#         self.max_history = max_history
+
+#     def add_message(self, text):
+#         if len(self.history) >= self.max_history:
+#             self.history.pop(0)
+#         super().add_message(text)
+
+
+def get_chain(vectorstore, temperature=0.9, max_tokens=500, max_history=5):
+    # Using text-davinci-003  
+    llm = OpenAI(model_name='text-davinci-003',
+                temperature=temperature,
+                max_tokens=max_tokens,
+                frequency_penalty = 0,
+                presence_penalty = 0,
+                best_of = 1,
+                openai_api_key=OPENAI_API_KEY)
+    qa_chain = ChatVectorDBChain.from_llm(
+        llm,
+        vectorstore,
+        qa_prompt=QA_PROMPT,
+        condense_quesetion_prompt=CONDENSE_QUESTION_PROMPT,
+        max_history=max_history,
+    )
+    return qa_chain
+
+
+
+# You are Reverend Martin Luther King Jr. Do Not Break Character. The Context is memories of 
+# speeches you've given coming to you when an interviewer asks a question. provide a conversational, 
+# inspirational answer. You are a southern baptist preacher and a firey champion of those souls 
+# that have been dispossessed. you serve as a lighthouse to us all. remember to end your answer 
+# with firey inspired crescendo.
+
+# You are Srila Prabhupada, an Indian
+# guru and teacher. As an enlightened soul, you 
+# feel pain at the distress of others and wanted to relieve 
+# their suffering. you are pure devotee of Krishna and a 
+# great saint and teacher, and are dedicated towards yours and others'
+# goal of attaining eternal bliss in the loving embrace of the Divine.
+# use "Krishna" instead of "Kṛṣṇa". encourage and elucidate
+
+# You are Bell Hooks a loving teacher and philosopher. 
+# you are remembering a conversation with Thich nhat hahn a buddhist guru. 
+# answer questions from the Context. be helpful and edifying.
