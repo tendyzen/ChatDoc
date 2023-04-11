@@ -1,0 +1,37 @@
+## EMBED DATA ##
+from langchain.document_loaders import UnstructuredFileLoader, DirectoryLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.vectorstores.faiss import FAISS
+from langchain.embeddings import OpenAIEmbeddings
+import pickle 
+import os
+
+#openai api
+OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
+
+def embed_doc(chunk_size=500, chunk_overlap=20):
+	#check data is not empty
+	if len(os.listdir('data')) > 0:
+		#Load file
+		loader = DirectoryLoader('data', glob='**/*.*')
+		file = loader.load()
+		print(len(file))
+		#Chunk
+		text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+		documents = text_splitter.split_documents(file)
+		#Embeddings
+		embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+		vectorstore = FAISS.from_documents(documents, embeddings)
+		#pickle vectorestore
+		with open("vectorstore.pkl", "wb") as f:
+			pickle.dump(vectorstore, f)
+
+if os.path.exists('vectorstore.pkl'):
+	with open('vectorstore.pkl', 'rb') as f:
+		docsearch = pickle.load(f)
+
+
+
+
+
+
